@@ -1,4 +1,5 @@
 # 本节主要讲述如何使用子类api模式自定义网络层
+# 还讲述了如何使用lambda来自定义不需定义参数的网络层
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,7 +57,7 @@ x_valid_scaled = scaler.fit_transform(x_valid)
 x_test_scaled = scaler.fit_transform(x_test)
 
 
-# 自定义层，使用子类api模式
+# 1 自定义层，使用子类api模式
 class CustomizedDenseLayer(keras.layers.Layer):
     def __init__(self, units, activation=None, **kwargs):
         self.units = units
@@ -81,10 +82,20 @@ class CustomizedDenseLayer(keras.layers.Layer):
         return self.activation(x @ self.kernel + self.bias)
 
 
+# 2 对于不想自定义参数的场景，可以使用lambda函数来定义网络层。e.g：
+# 实现tf.nn.softplus: log(1+e^x)，这个东西就是一个激活函数层
+customized_softplus = keras.layers.Lambda(lambda x: tf.nn.softplus(x))
+
+print(customized_softplus([-10., -5., 0., 5., 10.]))
+
 model = keras.models.Sequential([
     CustomizedDenseLayer(30, activation='relu',
                          input_shape=x_train.shape[1:]),
     CustomizedDenseLayer(1),
+    customized_softplus,
+    # customized_softplus激活函数等价于以下两种方式:
+    # keras.layers.Dense(1, activation="softplus")
+    # keras.layers.Dense(1), keras.layers.Activation("softplus"),
 ])
 model.summary()
 model.compile(loss="mean_squared_error", optimizer="sgd",  # 使用自定义损失函数
@@ -108,4 +119,3 @@ def plot_learning_curves(history):
 plot_learning_curves(history)
 # ret = model.evaluate(x_test_scaled, y_test)
 # print(ret)  # loss and acc
-# continue 3-6 07:20
