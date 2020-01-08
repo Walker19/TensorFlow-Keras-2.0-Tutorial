@@ -76,7 +76,9 @@ class CustomizedDenseLayer(keras.layers.Layer):
                                     initializer='zeros',
                                     trainable=True)
         super(CustomizedDenseLayer, self).build(input_shape)  # 为什么？
-
+        
+    # 当该自定义网络组成的模型开始构建后，其就会去调用build方法去构建一个self.kernel权重，
+    # 而当模型进行前向推理时，则会调用call方法进行计算！
     def call(self, x):
         """完成正向计算"""
         return self.activation(x @ self.kernel + self.bias)
