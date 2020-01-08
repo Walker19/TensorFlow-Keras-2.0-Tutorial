@@ -1,3 +1,5 @@
+# 本节一方面讲述如何将普通函数转化为TensorFlow中的图结构，
+# 使得函数计算速度更快，另一方面讲述如何指定参数的形状或类型
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -70,3 +72,32 @@ def display_tf_code(func):
 
 display_tf_code(scaled_elu)
 # continue 3-8 4:12
+
+
+var = tf.Variable(0.)
+
+
+@tf.function
+def add_21():
+    # tf.function内部不能定义variable
+    return var.assign_add(21)  # +=
+
+
+print(add_21())
+
+# 通过input_signature(签名函数)限定输入参数的形状和类型，
+# 如果不是指定的输入格式就会报错
+@tf.function(input_signature=[tf.TensorSpec([None], tf.int32, name='x')])
+def cube(z):
+    return tf.pow(z, 3)
+
+try:
+    print(cube(tf.constant([1., 2., 3.])))
+except ValueError as ex:
+    print(ex)
+
+print(cube(tf.constant([1, 2, 3])))
+
+# @tf.function: py func -> tf graph
+# get
+# continue 3-9, 4: 25
