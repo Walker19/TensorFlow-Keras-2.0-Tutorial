@@ -71,7 +71,6 @@ def display_tf_code(func):
 
 
 display_tf_code(scaled_elu)
-# continue 3-8 4:12
 
 
 var = tf.Variable(0.)
@@ -99,5 +98,11 @@ except ValueError as ex:
 print(cube(tf.constant([1, 2, 3])))
 
 # @tf.function: py func -> tf graph
-# get
-# continue 3-9, 4: 25
+# get_concrete_function -> add input signature -> SavedModel
+# 将
+cube_func_int32 = cube.get_concrete_function(
+    tf.TensorSpec([None], tf.int32)
+)
+print(cube_func_int32)
+print(cube_func_int32 is cube.get_concrete_function())
+# continue 3-9 5:19

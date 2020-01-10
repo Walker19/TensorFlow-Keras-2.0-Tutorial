@@ -11,6 +11,6 @@ import tensorflow as tf
 
 from tensorflow import keras
 # list or np.array ...
-dataset = tf.data.Dataset.from_tensor_slice(np.arange(10))
+dataset = tf.data.Dataset.from_tensor_slices(np.arange(10))
 print(dataset)
 
