@@ -10,7 +10,26 @@ import time
 import tensorflow as tf
 
 from tensorflow import keras
-# list or np.array ...
+
+# 将内存数据构建为Dataset，list or np.array ...
 dataset = tf.data.Dataset.from_tensor_slices(np.arange(10))
 print(dataset)
 
+# Dataset的操作
+for item in dataset:
+    print(item)
+
+# Dataset常用操作
+# 1. repeat -> epoch
+# 2. get batch
+dataset = dataset.repeat(3).batch(7)
+for item in dataset:
+    print(item)
+
+# 3. interleave:对每个元素操作并返回
+# 例子：文件名dataset -> 具体数据集
+
+dataset2 = dataset.interleave(
+    # map_fn
+
+)

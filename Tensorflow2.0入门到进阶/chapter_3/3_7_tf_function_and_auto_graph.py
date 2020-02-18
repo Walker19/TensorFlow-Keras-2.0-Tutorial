@@ -1,5 +1,6 @@
 # 本节一方面讲述如何将普通函数转化为TensorFlow中的图结构，
 # 使得函数计算速度更快，另一方面讲述如何指定参数的形状或类型
+# 最后还讲述了如何查看TensorFlow图函数的内部结构
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -78,7 +79,7 @@ var = tf.Variable(0.)
 
 @tf.function
 def add_21():
-    # tf.function内部不能定义variable
+    # tf.function内部不能定义variable !
     return var.assign_add(21)  # +=
 
 
@@ -99,10 +100,38 @@ print(cube(tf.constant([1, 2, 3])))
 
 # @tf.function: py func -> tf graph
 # get_concrete_function -> add input signature -> SavedModel
-# 将
+# tf function 调用 get_concrete_function 后即可保存为 SavedModel
+
 cube_func_int32 = cube.get_concrete_function(
     tf.TensorSpec([None], tf.int32)
 )
+
 print(cube_func_int32)
-print(cube_func_int32 is cube.get_concrete_function())
-# continue 3-9 5:19
+
+print(cube_func_int32 is cube.get_concrete_function(tf.TensorSpec([5], tf.int32)))
+print(cube_func_int32 is cube.get_concrete_function(tf.constant([1, 2, 3])))
+# cube.get_concrete_function(tf.TensorSpec([5], tf.int32))
+# True
+# 说明两者的signature是一样的
+
+# 仔细考察TensorFlow图结构的内部
+cube_func_int32.graph.get_operations()
+# 打印出cube_func_int32这个图函数的内部结构，从输入到操作到输出
+
+pow_op = cube_func_int32.graph.get_operations()[2]  # 第三步，幂计算
+print(pow_op)
+
+print(list(pow_op.inputs))  # 图结构的输入
+print(list(pow_op.outputs))  # 图结构的输出
+
+cube_func_int32.graph.get_operation_by_name("x")  # 取出该图结构的变量 x
+# x是 <tf.Operation 'x' type=Placeholder>
+# 说明x是占位符，因为TensorFlow是静态图模式，先确定好输入的shape，再有数据再具体计算
+# 所以使用的是占位符模式
+
+cube_func_int32.graph.get_tensor_by_name("x:0")
+# get_tensor_by_name，取出具体的值
+
+cube_func_int32.graph.as_graph_def()
+# TensorFlow图结构中操作和变量都是节点
+
