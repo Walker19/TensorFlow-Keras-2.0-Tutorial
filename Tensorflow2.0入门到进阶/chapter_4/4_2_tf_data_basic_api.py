@@ -27,9 +27,38 @@ for item in dataset:
     print(item)
 
 # 3. interleave:对每个元素操作并返回
-# 例子：文件名dataset -> 具体数据集
+# 例子：文件名dataset -> 读取文件名，得到具体数据集 ->
+# 得到大的新的数据集
+# (文件名dataset是指：dataset的元素是个字符串，表示文件路径名)
 
 dataset2 = dataset.interleave(
-    # map_fn
-
+    # map_fn 对元素做的操作
+    lambda v: tf.data.Dataset.from_tensor_slices(v),
+    # cycle_length 并行数量
+    cycle_length=5,
+    # block_length 从上面操作的元素中每次取出多少个
+    block_length=5,
+    # block_length 通过取出元素区块数目达到均匀混合(随机)的效果
 )
+
+for item in dataset2:
+    print(item)
+
+# 元祖构建 dataset
+x = np.array([[1, 2, ], [3, 4], [5, 6]])
+y = np.array(['cat', 'dog', 'fox'])
+
+dataset3 = tf.data.Dataset.from_tensor_slices((x, y))
+print(dataset3)
+
+for item_x, item_y in dataset3:
+    print(item_x.numpy(), item_y.numpy())
+
+# 字典作为dataset的输入
+dataset4 = tf.data.Dataset.from_tensor_slices({
+    'feature': x,
+    'label': y
+})
+
+for item in dataset4:
+    print(item['feature'].numpy(), item['label'].numpy())
