@@ -86,7 +86,7 @@ pprint.pprint(test_filenames)
 
 # 如何将上述文件路径名列表读取为关于内容的 dataset，两个步骤：
 # 1.filename -> dataset
-# 2.read file ->(interl) dataset -> datasets -> merge
+# 2.read file ->(interleave) dataset -> datasets -> merge
 # 3.parse 解析csv文件
 
 # 第一步：转化为文件名 dataset
@@ -94,7 +94,6 @@ filename_dataset = tf.data.Dataset.list_files(train_filenames)
 # list_files 专门将文件名转化为 dataset
 for filename in filename_dataset:
     print(filename)
-
 
 # 第二步，将文件名dataset读取为真实dataset
 n_readers = 5
@@ -112,8 +111,7 @@ for line in dataset.take(15):
     # 0.6366409215825501,2.852'
     # 这是csv的一行，分别展开的8个字段，最后个是label
 
-
-# 第三步：解析csv
+# 第三步：解析csv，注意这里只能解析csv--->以,分割
 # tf.io.decode_csv(str, record_defaults),str是需要转换的字符串，
 # record_defaults是将该字段转换为特定数据类型
 # 注意，我们这里是对csv每行(str)处理
@@ -127,7 +125,7 @@ sample_str = '1,2,3,4,5'
 record_defaults = [
     tf.constant(0, dtype=tf.int32),
     0,
-    np.nan,
+    np.nan,  # type(np.nan) == float
     'hello',
     tf.constant([])
 ]
@@ -135,13 +133,34 @@ parsed_fields = tf.io.decode_csv(sample_str, record_defaults)
 # record_defaults中的变量只是作为参照，来将sample_str中的变量转为同样数据类型
 print(parsed_fields)
 
-
 # 如果传入错误字符串怎么办？
 try:
-    parsed_fields = tf.io.decode_csv(',,,,',  record_defaults)
+    parsed_fields = tf.io.decode_csv(',,,,', record_defaults)
     # parsed_fields2 = tf.io.decode_csv('1,2,3,4,5,6,7',  record_defaults)
 except tf.errors.InvalidArgumentError as ex:
     print(ex)
 
-# continue
-# https://www.bilibili.com/video/av79196096?p=47
+
+def parse_csv_line(line, n_fields):
+    defs = [tf.constant(np.nan)] * n_fields
+    parsed_fields = tf.io.decode_csv(line, record_defaults=defs)
+    x = tf.stack(parsed_fields[0: -1])
+    y = tf.stack(parsed_fields[-1:])
+    return x, y
+
+
+parse_csv_line(
+    b'0.801544314532886,0.27216142415910205,-0.11624392696666119,-0.2023115137272354,-0.5430515742518128,-0.021039615516440048,-0.5897620622908205,-0.08241845654707416,3.226',
+    n_fields=9)
+
+print('yes')
+
+
+# 完整演示一个例子：
+# 读取文件名数据集，再将其合并得到新数据集
+def csv_reader_dataset(filenames, n_readers=5,
+                       batch_size=32, n_parse_threads=5,
+                       shu
+                       )
+# https: // www.bilibili.com / video / av79196096?p = 47
+# 4:21

@@ -26,7 +26,8 @@ dataset = dataset.repeat(3).batch(7)
 for item in dataset:
     print(item)
 
-# 3. interleave:对每个元素操作并返回
+# 3. interleave:对"每个元素"操作并返回得到新的dataset
+# 这里说的每个元素就是字面意思的每个元素，而不是从dataset中迭代取出的一批元素!注意
 # 例子：文件名dataset -> 读取文件名，得到具体数据集 ->
 # 得到大的新的数据集
 # (文件名dataset是指：dataset的元素是个字符串，表示文件路径名)
@@ -59,6 +60,8 @@ dataset4 = tf.data.Dataset.from_tensor_slices({
     'feature': x,
     'label': y
 })
+# 可见 x, y 的长度需要匹配
 
 for item in dataset4:
     print(item['feature'].numpy(), item['label'].numpy())
+    # 每次取出x,y的各一个元素
