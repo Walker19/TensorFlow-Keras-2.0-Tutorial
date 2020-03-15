@@ -106,3 +106,9 @@ plot_learning_curves(history)
 
 ret = model.evaluate(x_test_scaled, y_test)
 print(ret)  # loss and acc
+
+
+# 关于一个点: tf.keras.layers.Layer是网络中的层，只是用来中间计算，
+# 只需和其他层进行输入输出的连接就好了。而tf.keras.Model是一个keras的模型，比较抽象，
+# 具备直接训练（fit）的能力，所以layer需要定义在model中间
+# 但是Model类的模型也可以直接用函数式的方法来直接计算结果，然后手动更新梯度

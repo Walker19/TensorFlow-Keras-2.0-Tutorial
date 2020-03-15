@@ -1,4 +1,5 @@
 # 本节主要讲述如何利用 tf.data api从csv文件中读取数据并构造数据集
+# 最后对dataset数据集训练模型
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,9 +98,13 @@ for filename in filename_dataset:
 
 # 第二步，将文件名dataset读取为真实dataset
 n_readers = 5
+# 注意interleave是将原dataset中每个元素进行处理得到新dataset(每行数据)
+# 然后再将处理后的结果组合并return
+# TextLineDataset会将一个dataset转化为多行dataset，最后会merge起来
 dataset = filename_dataset.interleave(
     lambda filename: tf.data.TextLineDataset(filename).skip(1),
-    # TextLineDataset,按行读取文件内容
+    # TextLineDataset,按行读取文件内容，每个文件名得到的数据集最后会组合成
+    # 一个大的数据集
     # skip(1),跳过数据的第一行(标题栏)
     cycle_length=n_readers
 )
@@ -133,7 +138,7 @@ parsed_fields = tf.io.decode_csv(sample_str, record_defaults)
 # record_defaults中的变量只是作为参照，来将sample_str中的变量转为同样数据类型
 print(parsed_fields)
 
-# 如果传入错误字符串怎么办？
+# 如果传入错误字符串怎么办？---会报错
 try:
     parsed_fields = tf.io.decode_csv(',,,,', record_defaults)
     # parsed_fields2 = tf.io.decode_csv('1,2,3,4,5,6,7',  record_defaults)
@@ -141,7 +146,8 @@ except tf.errors.InvalidArgumentError as ex:
     print(ex)
 
 
-def parse_csv_line(line, n_fields):
+def parse_csv_line(line, n_fields=9):
+    # 解析一行字符串
     defs = [tf.constant(np.nan)] * n_fields
     parsed_fields = tf.io.decode_csv(line, record_defaults=defs)
     x = tf.stack(parsed_fields[0: -1])
@@ -157,10 +163,62 @@ print('yes')
 
 
 # 完整演示一个例子：
-# 读取文件名数据集，再将其合并得到新数据集
+# 1.读取文件名数据集，再将其合并得到新数据集
+# 2.read file -> dataset -> datasets -> merge
+# 3.parse csv
+
 def csv_reader_dataset(filenames, n_readers=5,
                        batch_size=32, n_parse_threads=5,
-                       shu
-                       )
-# https: // www.bilibili.com / video / av79196096?p = 47
-# 4:21
+                       shuffle_buffer_size=10000
+                       ):
+    dataset = tf.data.Dataset.list_files(filenames)
+    dataset = dataset.repeat()
+    dataset = dataset.interleave(
+        lambda filename: tf.data.TextLineDataset(filename).skip(1),
+        cycle_length=n_readers
+    )
+    dataset.shuffle(shuffle_buffer_size)
+    # map不改变数据集数量，原来多少处理后就多少，map对每个数据集处理，最后合并
+    dataset = dataset.map(parse_csv_line,
+                          num_parallel_calls=n_parse_threads)
+    dataset = dataset.batch(batch_size)
+    return dataset
+
+
+train_set = csv_reader_dataset(train_filenames, batch_size=3)
+
+for x_batch, y_batch in train_set.take(2):
+    print("x:")
+    pprint.pprint(x_batch)
+    print("y:")
+    pprint.pprint(y_batch)
+
+batch_size = 32
+train_set = csv_reader_dataset(train_filenames, batch_size=batch_size)
+valid_set = csv_reader_dataset(valid_filenames, batch_size=batch_size)
+test_set = csv_reader_dataset(test_filenames, batch_size=batch_size)
+
+model = keras.models.Sequential([
+    keras.layers.Dense(30, activation="relu",
+                       input_shape=[8]),
+    keras.layers.Dense(1),
+])
+print(model.summary())
+model.compile(loss="mean_squared_error",
+              optimizer="sgd")
+callbacks = [keras.callbacks.EarlyStopping(
+    patience=5, min_delta=1e-2)
+]
+
+history = model.fit(train_set,
+                    validation_data=valid_set,
+                    steps_per_epoch=11160 // batch_size,
+                    # 因为训练集是循环、不停产生数据，所以不知道一个epoch由多少step构成，
+                    # 所以需要指定steps_per_epoch
+                    validation_steps=3870//batch_size,
+                    # validation_steps同steps_per_epoch
+                    epochs=100,
+                    callbacks=callbacks)
+
+
+model.evaluate(test_set, steps=5160//batch_size)
