@@ -69,6 +69,7 @@ def save_to_csv(output_dir, data, name_prefix,
                 f.write(",".join(
                     [repr(col) for col in data[row_index]]))
                 f.write('\n')
+
     return filenames
 
 
@@ -80,7 +81,7 @@ header_cols = housing.feature_names + ["MidianHouseValue"]
 header_str = ",".join(header_cols)
 
 train_filenames = save_to_csv(output_dir, train_data, "train",
-                              header_str, n_parts=10)
+                              header_str, n_parts=20)
 
 valid_filenames = save_to_csv(output_dir, valid_data, "valid",
                               header_str, n_parts=10)
@@ -227,9 +228,10 @@ history = model.fit(train_set,
                     steps_per_epoch=11160 // batch_size,
                     # 因为训练集是循环、不停产生数据，所以不知道一个epoch由多少step构成，
                     # 所以需要指定steps_per_epoch
-                    validation_steps=3870 // batch_size,
+                    validation_steps=3870//batch_size,
                     # validation_steps同steps_per_epoch
                     epochs=100,
                     callbacks=callbacks)
 
-model.evaluate(test_set, steps=5160 // batch_size)
+
+model.evaluate(test_set, steps=5160//batch_size)
