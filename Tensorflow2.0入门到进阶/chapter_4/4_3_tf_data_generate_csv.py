@@ -1,3 +1,5 @@
+# 本节将回归问题使用的数据保存为csv，再用tf.data api来处理csv数据
+# 要点：tf.data处理csv
 # 本节主要讲述如何利用 tf.data api从csv文件中读取数据并构造数据集
 # 最后对dataset数据集训练模型
 import matplotlib as mpl
@@ -15,6 +17,9 @@ from tensorflow import keras
 from sklearn.datasets import fetch_california_housing
 
 housing = fetch_california_housing()
+# print(housing.DESCR)
+# print(housing.data.shape)
+# print(housing.target.shape)
 
 from sklearn.model_selection import train_test_split
 
@@ -24,6 +29,15 @@ x_train_all, x_test, y_train_all, y_test = train_test_split(
 x_train, x_valid, y_train, y_valid = train_test_split(
     x_train_all, y_train_all, random_state=11)
 
+print(x_train.shape, y_train.shape)
+print(x_valid.shape, y_valid.shape)
+print(x_test.shape, y_test.shape)
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+# fit_transform：在训练集计算均值和方差，并保存均值和方差以便测试集和验证集使
+# 用相同的均值和方差，就直接使用transform
 from sklearn.preprocessing import StandardScaler
 
 scaler = StandardScaler()
@@ -48,7 +62,6 @@ def save_to_csv(output_dir, data, name_prefix,
 
         part_csv = path_format.format(name_prefix, file_idx)
         filenames.append(part_csv)
-
         with open(part_csv, "wt", encoding="utf-8") as f:
             if header is not None:
                 f.write(header + "\n")
@@ -56,7 +69,6 @@ def save_to_csv(output_dir, data, name_prefix,
                 f.write(",".join(
                     [repr(col) for col in data[row_index]]))
                 f.write('\n')
-
     return filenames
 
 
@@ -68,7 +80,7 @@ header_cols = housing.feature_names + ["MidianHouseValue"]
 header_str = ",".join(header_cols)
 
 train_filenames = save_to_csv(output_dir, train_data, "train",
-                              header_str, n_parts=20)
+                              header_str, n_parts=10)
 
 valid_filenames = save_to_csv(output_dir, valid_data, "valid",
                               header_str, n_parts=10)
@@ -215,10 +227,9 @@ history = model.fit(train_set,
                     steps_per_epoch=11160 // batch_size,
                     # 因为训练集是循环、不停产生数据，所以不知道一个epoch由多少step构成，
                     # 所以需要指定steps_per_epoch
-                    validation_steps=3870//batch_size,
+                    validation_steps=3870 // batch_size,
                     # validation_steps同steps_per_epoch
                     epochs=100,
                     callbacks=callbacks)
 
-
-model.evaluate(test_set, steps=5160//batch_size)
+model.evaluate(test_set, steps=5160 // batch_size)

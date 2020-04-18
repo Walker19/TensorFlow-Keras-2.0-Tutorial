@@ -11,8 +11,35 @@ import tensorflow as tf
 
 from tensorflow import keras
 
-# 将内存数据构建为Dataset，list or np.array ...
-dataset = tf.data.Dataset.from_tensor_slices(np.arange(10))
+# list or np.array ...
+
+# 1. inputs are array
+dataset = tf.data.Dataset.from_tensor_slices(np.arange(10))  # 输入情况是数组
+print(dataset)
+
+# 1.1 对 dataset 的操作, e.g: 遍历
+for item in dataset:
+    print(item)
+
+# 1.2. 机器学习中对数据集的处理：
+# 1> repeat -> epoch
+# 2> get batch, 批量训练
+dataset = dataset.repeat(3).batch(7)  # 数据被复制3倍，每份被分为长度为7的小块
+
+# for item in dataset:
+#     print(item)
+
+# 3> interleave: 对dataset每个元素进行处理，最后合并
+# case: 文件名dataset -> 具体数据集
+
+dataset2 = dataset.interleave(
+    lambda v: tf.data.Dataset.from_tensor_slices(v),  # map_fn：处理函数
+    cycle_length=5,  # cycle_length: 并行处理文件数
+    block_length=5,  # block_length：每次从dataset中取多少个元素
+    # 将内存数据构建为Dataset，list or np.array ...
+    dataset=tf.data.Dataset.from_tensor_slices(np.arange(10))
+)
+
 print(dataset)
 
 # Dataset的操作
@@ -45,6 +72,10 @@ dataset2 = dataset.interleave(
 for item in dataset2:
     print(item)
 
+# 2. inputs are tuple
+x = np.array([[1, 2], [3, 4], [5, 6]])
+y = np.array(['cat', 'dog', 'fox'])
+dataset3 = tf.data.Dataset.from_tensor_slices((x, y))  # 输入数据是元组
 # 元祖构建 dataset
 x = np.array([[1, 2, ], [3, 4], [5, 6]])
 y = np.array(['cat', 'dog', 'fox'])
@@ -55,6 +86,12 @@ print(dataset3)
 for item_x, item_y in dataset3:
     print(item_x.numpy(), item_y.numpy())
 
+# 3. inputs are dict
+dataset4 = tf.data.Dataset.from_tensor_slices({"feature": x,
+                                               "label": y})
+
+for item in dataset4:
+    print(item)
 # 字典作为dataset的输入
 dataset4 = tf.data.Dataset.from_tensor_slices({
     'feature': x,
